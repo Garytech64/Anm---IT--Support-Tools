@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IT Monitoring Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>IT Monitoring Dashboard</h1>
+    <p>Last Updated: {{ time }}</p>
+
+    <h2>System Metrics</h2>
+    <ul>
+        <li>CPU Usage: {{ cpu }}%</li>
+        <li>Memory Usage: {{ memory }}%</li>
+    </ul>
+
+    <h2>Network Devices</h2>
+    <ul>
+    {% for device in devices %}
+        <li>{{ device.name }} - {{ device.status }}</li>
+    {% endfor %}
+    </ul>
+</body>
+</html>
