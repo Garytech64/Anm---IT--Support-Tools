@@ -2,26 +2,79 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>IT Monitoring Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-	<meta http-equiv="refresh" content="5">
-
+    <title>ANM IT Monitoring Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; }
+        .section { margin-bottom: 30px; }
+        .progress-bar { width: 300px; height: 20px; background-color: #ddd; border-radius: 5px; overflow: hidden; }
+        .progress-fill { height: 100%; background-color: #4caf50; text-align: center; color: white; line-height: 20px; }
+    </style>
 </head>
 <body>
-    <h1>IT Monitoring Dashboard</h1>
-    <p>Last Updated: {{ time }}</p>
+    <h1>ANM IT Monitoring Dashboard</h1>
 
-    <h2>System Metrics</h2>
-    <ul>
-        <li>CPU Usage: {{ cpu }}%</li>
-        <li>Memory Usage: {{ memory }}%</li>
-    </ul>
+    <div class="section">
+        <h2>CPU Usage</h2>
+        <div class="progress-bar">
+            <div id="cpu-bar" class="progress-fill">0%</div>
+        </div>
+    </div>
 
-    <h2>Network Devices</h2>
-    <ul>
-    {% for device in devices %}
-        <li>{{ device.name }} - {{ device.status }}</li>
-    {% endfor %}
-    </ul>
+    <div class="section">
+        <h2>RAM Usage</h2>
+        <p>Total: <span id="ram-total">0</span> GB | Used: <span id="ram-used">0</span> GB</p>
+        <div class="progress-bar">
+            <div id="ram-bar" class="progress-fill">0%</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Disk C:</h2>
+        <p>Total: <span id="disk-total">0</span> GB | Used: <span id="disk-used">0</span> GB | Free: <span id="disk-free">0</span> GB</p>
+        <div class="progress-bar">
+            <div id="disk-bar" class="progress-fill">0%</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Network Usage (Live)</h2>
+        <p>Upload: <span id="upload">0</span> KB/s | Download: <span id="download">0</span> KB/s</p>
+    </div>
+
+    <script>
+        function updateStats() {
+            fetch("/stats")
+                .then(response => response.json())
+                .then(data => {
+                    // CPU
+                    document.getElementById("cpu-bar").style.width = data.cpu_percent + "%";
+                    document.getElementById("cpu-bar").textContent = data.cpu_percent + "%";
+
+                    // RAM
+                    document.getElementById("ram-total").textContent = data.ram_total;
+                    document.getElementById("ram-used").textContent = data.ram_used;
+                    document.getElementById("ram-bar").style.width = data.ram_percent + "%";
+                    document.getElementById("ram-bar").textContent = data.ram_percent + "%";
+
+                    // Disk
+                    document.getElementById("disk-total").textContent = data.disk_total;
+                    document.getElementById("disk-used").textContent = data.disk_used;
+                    document.getElementById("disk-free").textContent = data.disk_free;
+                    document.getElementById("disk-bar").style.width = data.disk_percent + "%";
+                    document.getElementById("disk-bar").textContent = data.disk_percent + "%";
+
+                    // Network
+                    document.getElementById("upload").textContent = data.upload_speed;
+                    document.getElementById("download").textContent = data.download_speed;
+                })
+                .catch(err => console.error(err));
+        }
+
+        // Update every 2 seconds
+        setInterval(updateStats, 2000);
+
+        // Initial update
+        updateStats();
+    </script>
 </body>
 </html>
