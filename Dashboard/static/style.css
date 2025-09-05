@@ -1,22 +1,43 @@
+/* General body styling */
 body {
     font-family: Arial, sans-serif;
-    margin: 20px;
-    background-color: #f5f5f5;
-}
-
-h1, h2 {
+    background-color: #f4f4f9;
     color: #333;
+    margin: 20px;
 }
 
+/* Headings */
+h1 {
+    color: #2c3e50;
+    text-align: center;
+}
+
+h2 {
+    color: #34495e;
+    margin-top: 20px;
+}
+
+/* Lists */
 ul {
     list-style-type: none;
     padding: 0;
 }
 
 li {
-    background-color: #fff;
+    background-color: #ecf0f1;
     margin: 5px 0;
     padding: 10px;
     border-radius: 5px;
-    box-shadow: 1px 1px 3px #ccc;
+}
+
+/* Highlight dynamic metrics */
+span {
+    font-weight: bold;
+    color: #27ae60;
+}
+
+/* Optional: style the last updated timestamp */
+p {
+    font-style: italic;
+    text-align: center;
 }
