@@ -1,54 +1,55 @@
 from flask import Flask, render_template, jsonify
 import psutil
-import shutil
+import socket
+from threading import Timer
+import webbrowser
 
 app = Flask(__name__)
 
-# Keep previous network counters for speed calculation
-prev_counters = psutil.net_io_counters()
+def get_network_info():
+    """Return hostname and local IP address."""
+    hostname = socket.gethostname()
+    try:
+        ip_address = socket.gethostbyname(hostname)
+    except socket.gaierror:
+        ip_address = "Unavailable"
+    return hostname, ip_address
 
 @app.route("/")
 def dashboard():
-    return render_template("index.html")
-
-@app.route("/stats")
-def stats():
-    global prev_counters
-
-    # CPU usage
-    cpu_percent = psutil.cpu_percent(interval=0.5)
-
-    # RAM usage
+    # Initial values for template
+    cpu_percent = psutil.cpu_percent(interval=1)
     ram = psutil.virtual_memory()
-    ram_total = ram.total // (1024**3)
-    ram_used = ram.used // (1024**3)
-    ram_percent = ram.percent
+    disk = psutil.disk_usage('C:\\')
+    hostname, ip_address = get_network_info()
+    
+    return render_template(
+        "index.html",
+        cpu=cpu_percent,
+        ram_used=ram.used // (1024**3),
+        ram_total=ram.total // (1024**3),
+        disk_total=disk.total // (1024**3),
+        disk_used=disk.used // (1024**3),
+        disk_free=disk.free // (1024**3),
+        hostname=hostname,
+        ip_address=ip_address
+    )
 
-    # Disk C: usage
-    total, used, free = shutil.disk_usage("C:/")
-    disk_total = total // (1024**3)
-    disk_used = used // (1024**3)
-    disk_free = free // (1024**3)
-    disk_percent = int((used / total) * 100)
-
-    # Network speeds (KB/s)
-    current_counters = psutil.net_io_counters()
-    upload_speed = (current_counters.bytes_sent - prev_counters.bytes_sent) / 1024
-    download_speed = (current_counters.bytes_recv - prev_counters.bytes_recv) / 1024
-    prev_counters = current_counters
-
+@app.route("/api/stats")
+def api_stats():
+    cpu_percent = psutil.cpu_percent(interval=1)
+    ram = psutil.virtual_memory()
+    disk = psutil.disk_usage('C:\\')
     return jsonify({
-        "cpu_percent": cpu_percent,
-        "ram_total": ram_total,
-        "ram_used": ram_used,
-        "ram_percent": ram_percent,
-        "disk_total": disk_total,
-        "disk_used": disk_used,
-        "disk_free": disk_free,
-        "disk_percent": disk_percent,
-        "upload_speed": round(upload_speed, 2),
-        "download_speed": round(download_speed, 2)
+        "cpu": cpu_percent,
+        "ram_used": ram.used // (1024**3),
+        "ram_total": ram.total // (1024**3),
+        "disk_total": disk.total // (1024**3),
+        "disk_used": disk.used // (1024**3),
+        "disk_free": disk.free // (1024**3)
     })
 
 if __name__ == "__main__":
+    url = "http://127.0.0.1:5000/"
+    Timer(1, lambda: webbrowser.open(url)).start()  # Open browser automatically
     app.run(debug=True)

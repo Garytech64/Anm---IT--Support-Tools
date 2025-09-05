@@ -4,77 +4,125 @@
     <meta charset="UTF-8">
     <title>ANM IT Monitoring Dashboard</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 30px; }
-        .section { margin-bottom: 30px; }
-        .progress-bar { width: 300px; height: 20px; background-color: #ddd; border-radius: 5px; overflow: hidden; }
-        .progress-fill { height: 100%; background-color: #4caf50; text-align: center; color: white; line-height: 20px; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            padding: 20px;
+        }
+        h1 { text-align: center; }
+        .section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px auto;
+            max-width: 500px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            background-color: #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            height: 20px;
+            margin-top: 5px;
+        }
+        .progress-fill {
+            background-color: #4CAF50;
+            height: 100%;
+            width: 0%;
+            text-align: center;
+            color: white;
+            line-height: 20px;
+            font-size: 12px;
+        }
+        img.icon {
+            width: 24px;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
     <h1>ANM IT Monitoring Dashboard</h1>
 
+    <!-- CPU -->
     <div class="section">
         <h2>CPU Usage</h2>
+        <p>
+            <img src="{{ url_for('static', filename='cpu_icon.png') }}" class="icon" alt="CPU Icon">
+            <span id="cpu-usage">{{ cpu }}%</span>
+        </p>
         <div class="progress-bar">
-            <div id="cpu-bar" class="progress-fill">0%</div>
+            <div id="cpu-bar" class="progress-fill" style="width: {{ cpu }}%;">{{ cpu }}%</div>
         </div>
     </div>
 
+    <!-- RAM -->
     <div class="section">
         <h2>RAM Usage</h2>
-        <p>Total: <span id="ram-total">0</span> GB | Used: <span id="ram-used">0</span> GB</p>
+        <p>
+            <img src="{{ url_for('static', filename='ram_icon.png') }}" class="icon" alt="RAM Icon">
+            <span id="ram-used">{{ ram_used }}</span> / <span id="ram-total">{{ ram_total }}</span> GB
+        </p>
         <div class="progress-bar">
-            <div id="ram-bar" class="progress-fill">0%</div>
+            <div id="ram-bar" class="progress-fill" style="width: {{ (ram_used/ram_total)*100 }}%;">{{ (ram_used/ram_total)*100 | round(0) }}%</div>
         </div>
     </div>
 
+    <!-- Disk -->
     <div class="section">
         <h2>Disk C:</h2>
-        <p>Total: <span id="disk-total">0</span> GB | Used: <span id="disk-used">0</span> GB | Free: <span id="disk-free">0</span> GB</p>
+        <p>
+            <img src="{{ url_for('static', filename='hard_drive_icon.png') }}" class="icon" alt="Disk Icon">
+            Total: <span id="disk-total">{{ disk_total }}</span> GB | 
+            Used: <span id="disk-used">{{ disk_used }}</span> GB | 
+            Free: <span id="disk-free">{{ disk_free }}</span> GB
+        </p>
         <div class="progress-bar">
-            <div id="disk-bar" class="progress-fill">0%</div>
+            <div id="disk-bar" class="progress-fill" style="width: {{ (disk_used/disk_total)*100 }}%;">{{ (disk_used/disk_total)*100 | round(0) }}%</div>
         </div>
     </div>
 
+    <!-- Network -->
     <div class="section">
-        <h2>Network Usage (Live)</h2>
-        <p>Upload: <span id="upload">0</span> KB/s | Download: <span id="download">0</span> KB/s</p>
+        <h2>Network Info</h2>
+        <p>
+            <img src="{{ url_for('static', filename='network_icon.png') }}" class="icon" alt="Network Icon">
+            IP: {{ ip_address }}<br>
+            Hostname: {{ hostname }}
+        </p>
     </div>
 
+    <!-- Auto-refresh stats -->
     <script>
         function updateStats() {
-            fetch("/stats")
+            fetch('/api/stats')
                 .then(response => response.json())
                 .then(data => {
                     // CPU
-                    document.getElementById("cpu-bar").style.width = data.cpu_percent + "%";
-                    document.getElementById("cpu-bar").textContent = data.cpu_percent + "%";
+                    document.getElementById('cpu-usage').innerText = data.cpu + '%';
+                    document.getElementById('cpu-bar').style.width = data.cpu + '%';
+                    document.getElementById('cpu-bar').innerText = data.cpu + '%';
 
                     // RAM
-                    document.getElementById("ram-total").textContent = data.ram_total;
-                    document.getElementById("ram-used").textContent = data.ram_used;
-                    document.getElementById("ram-bar").style.width = data.ram_percent + "%";
-                    document.getElementById("ram-bar").textContent = data.ram_percent + "%";
+                    document.getElementById('ram-used').innerText = data.ram_used;
+                    document.getElementById('ram-total').innerText = data.ram_total;
+                    let ramPercent = Math.round((data.ram_used / data.ram_total) * 100);
+                    document.getElementById('ram-bar').style.width = ramPercent + '%';
+                    document.getElementById('ram-bar').innerText = ramPercent + '%';
 
                     // Disk
-                    document.getElementById("disk-total").textContent = data.disk_total;
-                    document.getElementById("disk-used").textContent = data.disk_used;
-                    document.getElementById("disk-free").textContent = data.disk_free;
-                    document.getElementById("disk-bar").style.width = data.disk_percent + "%";
-                    document.getElementById("disk-bar").textContent = data.disk_percent + "%";
-
-                    // Network
-                    document.getElementById("upload").textContent = data.upload_speed;
-                    document.getElementById("download").textContent = data.download_speed;
-                })
-                .catch(err => console.error(err));
+                    document.getElementById('disk-used').innerText = data.disk_used;
+                    document.getElementById('disk-total').innerText = data.disk_total;
+                    document.getElementById('disk-free').innerText = data.disk_free;
+                    let diskPercent = Math.round((data.disk_used / data.disk_total) * 100);
+                    document.getElementById('disk-bar').style.width = diskPercent + '%';
+                    document.getElementById('disk-bar').innerText = diskPercent + '%';
+                });
         }
 
-        // Update every 2 seconds
-        setInterval(updateStats, 2000);
-
-        // Initial update
-        updateStats();
+        // Update every 5 seconds
+        setInterval(updateStats, 5000);
     </script>
 </body>
 </html>
