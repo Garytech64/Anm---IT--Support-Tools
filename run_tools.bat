@@ -1,5 +1,6 @@
 @echo off
 title ANM IT Support Tools
+
 :MENU
 cls
 echo ================================
@@ -32,7 +33,7 @@ pause
 goto MENU
 
 :BACKUP
-cd /d %~dp0Scripts
-python backup_script.py
+cd /d %~dp0
+python backup.py
 pause
 goto MENU
