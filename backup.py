@@ -2,9 +2,9 @@ import os
 import shutil
 import datetime
 
-# === Multi-Folder Backup Script with Logging and Cleanup ===
+print("=== Multi-Folder Backup Script with Cleanup ===")
 
-# Define folders to back up
+# Folders to back up
 user_profile = os.environ["USERPROFILE"]
 folders_to_backup = {
     "Desktop": os.path.join(user_profile, "OneDrive", "Desktop"),
@@ -12,66 +12,67 @@ folders_to_backup = {
     "Downloads": os.path.join(user_profile, "Downloads"),
 }
 
-# Backup root
-backup_root = os.path.join("C:\\ANM-IT-Support-Tools", "Backup")
+backup_root = os.path.join(os.getcwd(), "Backup")
 os.makedirs(backup_root, exist_ok=True)
 
-# Log file
-log_file = os.path.join(backup_root, "backup_log.txt")
-with open(log_file, "w") as f:
-    f.write("=== Backup Log ===\n")
-    f.write(f"Run at: {datetime.datetime.now()}\n\n")
-
-print("=== Multi-Folder Backup Script with Cleanup ===")
-
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-all_success = True
 
-for label, src in folders_to_backup.items():
-    if not os.path.exists(src):
-        print(f"Warning: {label} folder not found at {src}, skipping.")
-        with open(log_file, "a") as f:
-            f.write(f"Warning: {label} folder not found at {src}, skipping.\n")
+log_file = os.path.join(backup_root, "backup_log.txt")
+success_count = 0
+fail_count = 0
+skipped_files = []
+
+
+def log(message):
+    """Write to console and append to log file"""
+    print(message)
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(message + "\n")
+
+
+def ignore_files(dir, files):
+    """Ignore .PST files and return them for logging"""
+    global skipped_files
+    ignored = [f for f in files if f.lower().endswith(".pst")]
+    for f in ignored:
+        skipped_files.append(os.path.join(dir, f))
+    return ignored
+
+
+for name, folder in folders_to_backup.items():
+    if not os.path.exists(folder):
+        log(f"Warning: {name} folder not found at {folder}, skipping.")
+        fail_count += 1
         continue
 
-    dst = os.path.join(backup_root, f"{label}_Backup_{timestamp}")
-
+    backup_path = os.path.join(backup_root, f"{name}_Backup_{timestamp}")
     try:
-        shutil.copytree(src, dst)
-        print(f"Backed up {label} successfully: {dst}")
-        with open(log_file, "a") as f:
-            f.write(f"Backed up {label} successfully: {dst}\n")
-    except shutil.Error as e:
-        print(f"Failed to back up {label}: {e.args}")
-        with open(log_file, "a") as f:
-            f.write(f"Failed to back up {label}: {e.args}\n")
-        all_success = False
-    except (PermissionError, OSError) as e:
-        print(f"Skipped file(s) in {label}: {e}")
-        with open(log_file, "a") as f:
-            f.write(f"Skipped file(s) in {label}: {e}\n")
-        all_success = False
+        shutil.copytree(folder, backup_path, ignore=ignore_files)
+        log(f"Backed up {name} successfully: {backup_path}")
+        success_count += 1
+    except Exception as e:
+        log(f"Failed to back up {name}: {e}")
+        fail_count += 1
 
-# Cleanup old backups (keep latest 3 per folder)
-for label in folders_to_backup.keys():
-    backups = [d for d in os.listdir(backup_root) if d.startswith(label + "_Backup_")]
+
+# Cleanup: keep only 3 most recent backups per folder
+for folder_name in folders_to_backup.keys():
+    backups = [d for d in os.listdir(backup_root) if d.startswith(folder_name)]
     backups.sort(reverse=True)
     for old in backups[3:]:
+        old_path = os.path.join(backup_root, old)
         try:
-            shutil.rmtree(os.path.join(backup_root, old))
-            print(f"Deleted old backup: {old}")
-            with open(log_file, "a") as f:
-                f.write(f"Deleted old backup: {old}\n")
+            shutil.rmtree(old_path)
+            log(f"Deleted old backup: {old}")
         except Exception as e:
-            print(f"Could not delete {old}: {e}")
-            with open(log_file, "a") as f:
-                f.write(f"Could not delete {old}: {e}\n")
+            log(f"Could not delete {old}: {e}")
 
-if all_success:
-    print("Multi-Folder Backup completed successfully.")
-    with open(log_file, "a") as f:
-        f.write("Multi-Folder Backup completed successfully.\n")
-else:
-    print("Multi-Folder Backup completed with errors. See backup_log.txt for details.")
-    with open(log_file, "a") as f:
-        f.write("Multi-Folder Backup completed with errors.\n")
+# Log skipped files
+if skipped_files:
+    log("\nSkipped locked/system files:")
+    for f in skipped_files:
+        log(f"  - {f}")
+
+# Summary
+summary = f"\nBackup finished: {success_count}/{len(folders_to_backup)} folders backed up successfully, {fail_count} failed, {len(skipped_files)} files skipped."
+log(summary)
